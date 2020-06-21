@@ -59,8 +59,6 @@ app.post('/api/auth/login', async(req: Request, res: Response) => {
             urlPhoto: user.urlPhoto,
             rol: user.rol
         };
-
-        console.log(userValid);
     
         jwt.sign(userValid, 'secretkeyword', { expiresIn: '120s' }, ( err: any, token ) => {
     
@@ -97,12 +95,12 @@ app.post('/api/auth/createUser', async(req: Request, res:Response) => {
 
     const { email, password, fullName, urlPhoto, rol } = req.body;
 
-    const user = await mongoDB.db.collection('users').findOne({ email: email, fullName: fullName});
+    const user = await mongoDB.db.collection('users').findOne({ email: email});
 
     if(user){
         return res.status(403).json({
             ok: false,
-            msg: 'Usuario ya existe en la base de datos. Por favor introduzca información valida.'
+            msg: 'Usuario ya registrado. Por favor introduzca información valida.'
         });  
     }
     else {
@@ -119,6 +117,46 @@ app.post('/api/auth/createUser', async(req: Request, res:Response) => {
         });
     }
 
+});
+
+app.post('/api/auth/deleteUser', async(req: Request, res: Response) => {
+    const { email } = req.body;
+
+    const user = await mongoDB.db.collection('users').deleteOne({email: email});
+
+    return res.status(200).json({
+        ok: true,
+        msg: 'Usuario eliminado correctamente.'
+    });
+});
+
+app.get('/api/auth/verifyToken', token.verify, async(req: Request, res: Response) => {
+    const { authUser } = req.body;
+
+    return res.status(200).json({
+        ok: true,
+        msg: 'Token verificado.'
+    });
+});
+
+app.get('/api/auth/getUsers', token.verify, async(req: Request, res:Response) => {
+    const { authUser } = req.body
+
+    const users = await mongoDB.db.collection('users').find({}).toArray();
+
+    const userlist = [];
+
+    for(var i=0; i< users.length; i++){
+        if(users[i].rol != 'ADMIN'){
+            userlist.push(users[i]);
+        }
+    }
+
+    return res.status(200).json({
+        ok: true,
+        msg: 'Lista de usuarios recolectada correctamente.',
+        collection: userlist
+    });
 });
 
 app.listen(ENV.API.PORT, async() => {

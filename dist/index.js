@@ -57,7 +57,6 @@ app.post('/api/auth/login', (req, res) => __awaiter(void 0, void 0, void 0, func
             urlPhoto: user.urlPhoto,
             rol: user.rol
         };
-        console.log(userValid);
         jsonwebtoken_1.default.sign(userValid, 'secretkeyword', { expiresIn: '120s' }, (err, token) => {
             if (err) {
                 return res.status(500).json({
@@ -86,11 +85,11 @@ app.post('/api/auth/login', (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 app.post('/api/auth/createUser', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password, fullName, urlPhoto, rol } = req.body;
-    const user = yield mongoDB.db.collection('users').findOne({ email: email, fullName: fullName });
+    const user = yield mongoDB.db.collection('users').findOne({ email: email });
     if (user) {
         return res.status(403).json({
             ok: false,
-            msg: 'Usuario ya existe en la base de datos. Por favor introduzca información valida.'
+            msg: 'Usuario ya registrado. Por favor introduzca información valida.'
         });
     }
     else {
@@ -104,6 +103,36 @@ app.post('/api/auth/createUser', (req, res) => __awaiter(void 0, void 0, void 0,
             result: insert.insertedId
         });
     }
+}));
+app.post('/api/auth/deleteUser', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email } = req.body;
+    const user = yield mongoDB.db.collection('users').deleteOne({ email: email });
+    return res.status(200).json({
+        ok: true,
+        msg: 'Usuario eliminado correctamente.'
+    });
+}));
+app.get('/api/auth/verifyToken', token.verify, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { authUser } = req.body;
+    return res.status(200).json({
+        ok: true,
+        msg: 'Token verificado.'
+    });
+}));
+app.get('/api/auth/getUsers', token.verify, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { authUser } = req.body;
+    const users = yield mongoDB.db.collection('users').find({}).toArray();
+    const userlist = [];
+    for (var i = 0; i < users.length; i++) {
+        if (users[i].rol != 'ADMIN') {
+            userlist.push(users[i]);
+        }
+    }
+    return res.status(200).json({
+        ok: true,
+        msg: 'Lista de usuarios recolectada correctamente.',
+        collection: userlist
+    });
 }));
 app.listen(env_productions_1.default.API.PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     console.log(`Servidor de APIs funcionando correctamente en el puerto ${env_productions_1.default.API.PORT}`);
